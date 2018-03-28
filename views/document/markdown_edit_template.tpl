@@ -271,9 +271,6 @@
         </div>
     </div>
 </div>
-<template id="template-normal">
-{{template "document/template_normal.tpl"}}
-</template>
 <template id="template-api">
 {{template "document/template_api.tpl"}}
 </template>
