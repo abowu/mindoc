@@ -2,14 +2,12 @@
 <html lang="zh-CN">
 <head>
 
-    <title>{{.Model.BookName}} - Powered by MinDoc</title>
+    <title>{{.Model.BookName}}</title>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="renderer" content="webkit">
-    <meta name="author" content="Minho" />
-    <meta name="site" content="https://www.iminho.me" />
     <meta name="keywords" content="{{.Model.BookName}}">
     <meta name="description" content="{{.Model.Description}}">
 
@@ -126,11 +124,7 @@
                     </div>
                 </div>
             </div>
-            <div class="m-copyright">
-                <p>
-                    本文档使用 <a href="https://www.iminho.me" target="_blank">MinDoc</a> 发布
-                </p>
-            </div>
+       
         </div>
         <div class="manual-right">
             <div class="manual-article">
