@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>编辑文档 - Powered by MinDoc</title>
+    <title>编辑文档</title>
 
     <!-- Bootstrap -->
     <link href="{{cdncss "/static/bootstrap/css/bootstrap.min.css"}}" rel="stylesheet">
@@ -60,11 +60,7 @@
                     </div>
                 </div>
             </div>
-            <div class="m-copyright">
-                <p>
-                    本文档使用 <a href="https://www.iminho.me" target="_blank">MinDoc</a> 发布
-                </p>
-            </div>
+     
         </div>
         <div class="manual-right">
             <div class="manual-article">
