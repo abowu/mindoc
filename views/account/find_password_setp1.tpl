@@ -6,7 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="renderer" content="webkit" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="MinDoc" />
     <title>找回密码 </title>
 
     <!-- Bootstrap -->

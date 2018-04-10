@@ -13,7 +13,6 @@
                         <b class="text">chrome</b>
                     </span>
         </p>
-        <p class="from">来自MinDoc的提醒</p>
         <b class="browsehappy-arrow"></b>
     </div>
 </div>
