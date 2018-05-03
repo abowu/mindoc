@@ -39,13 +39,6 @@
                         <dd>
                             <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" class="name" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">{{$item.BookName}}</a>
                         </dd>
-                        <dd>
-                            <span class="author">
-                                <b class="text">作者</b>
-                                <b class="text">-</b>
-                                <b class="text">{{if eq $item.RealName "" }}{{$item.CreateName}}{{else}}{{$item.RealName}}{{end}}</b>
-                            </span>
-                        </dd>
                     </dl>
                 </div>
                 {{end}}
