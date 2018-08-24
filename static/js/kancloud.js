@@ -1,3 +1,63 @@
+var events = function () {
+    var articleOpen = function (event, $param) {
+        //当打开文档时，将文档ID加入到本地缓存。
+        window.sessionStorage && window.sessionStorage.setItem("MinDoc::LastLoadDocument:" + window.book.identify, $param.$id);
+        var prevState = window.history.state || {};
+        if ('pushState' in history) {
+
+            if ($param.$id) {
+                prevState.$id === $param.$id || window.history.pushState($param, $param.$id, $param.$url);
+            } else {
+                window.history.pushState($param, $param.$id, $param.$url);
+                window.history.replaceState($param, $param.$id, $param.$url);
+            }
+        } else {
+            window.location.hash = $param.$url;
+        }
+
+        initHighlighting();
+
+        $(".manual-right").scrollTop(0);
+        //使用layer相册功能查看图片
+        layer.photos({photos: "#page-content"});
+    };
+    if(window.sessionStorage){
+        return {
+            data: function ($key, $value) {
+                $key = "MinDoc::Document:" + $key;
+                if(typeof $value === "undefined"){
+                    var data = window.sessionStorage.getItem($key);
+                    return JSON.parse(data);
+                } else {
+                    $value = JSON.stringify($value);
+                    return window.sessionStorage.setItem($key,$value);
+                }
+            },
+            trigger: function ($e, $obj) {
+                articleOpen($e, $obj);
+            }
+        }
+    }else{
+        return {
+            data : function ($key, $value) {
+                $key = "MinDoc::Document:" + $key;
+                if(typeof $value === "undefined"){
+                    return $("body").data($key);
+                }else{
+                    return $('body').data($key, $value);
+                }
+            },
+            trigger: function ($e, $obj) {
+                if($e === "article.open"){
+                    articleOpen($e, $obj);
+                }else {
+                    $('body').trigger('article.open', $obj);
+                }
+            }
+        }
+    }
+}();
+
 /***
  * 加载文档到阅读区
  * @param $url
@@ -9,25 +69,23 @@ function loadDocument($url, $id, $callback) {
         url : $url,
         type : "GET",
         beforeSend : function (xhr) {
-            var body = events.data('body_' + $id);
-            var title = events.data('title_' + $id);
-            var doc_title = events.data('doc_title_' + $id);
-            var doc_info = events.data('doc_info_' + $id);
-
-            if (body && title && doc_title) {
+            var data = events.data($id);
+            if(data) {
                 if (typeof $callback === "function") {
-                    body = $callback(body);
+                    data.body = $callback(data.body);
                 }
 
-                $("#page-content").html(body);
-                $("title").text(title);
-                $("#article-title").text(doc_title);
-                $("#article-info").text(doc_info);
+                $("#page-content").html(data.body);
+                $("title").text(data.title);
+                $("#article-title").text(data.doc_title);
+                $("#article-info").text(data.doc_info);
 
-                events.trigger('article.open', { $url : $url,  $id : $id });
+                events.trigger('article.open', {$url: $url, $id: $id});
 
                 return false;
+
             }
+
             NProgress.start();
         },
         success : function (res) {
@@ -47,10 +105,7 @@ function loadDocument($url, $id, $callback) {
                 $("#article-title").text(doc_title);
                 $("#article-info").text(doc_info);
 
-                events.data('body_' + $id, body);
-                events.data('title_' + $id, title);
-                events.data('doc_title_' + $id, doc_title);
-                events.data('doc_info_' + $id, doc_info);
+                events.data($id, res.data);
 
                 events.trigger('article.open', { $url : $url, $id : $id });
             } else if (res.errcode === 6000) {
@@ -61,6 +116,9 @@ function loadDocument($url, $id, $callback) {
         },
         complete : function () {
             NProgress.done();
+        },
+        error : function () {
+            layer.msg("加载失败");
         }
     });
 }
@@ -69,18 +127,21 @@ function loadDocument($url, $id, $callback) {
  * 初始化代码高亮
  */
 function initHighlighting() {
-    $('pre,pre.ql-syntax').each(function (i, block) {
-        if($(this).hasClass('prettyprinted')){
-            return;
-        }
-        hljs.highlightBlock(block);
-    });
-    hljs.initLineNumbersOnLoad();
-
+    try {
+        $('pre,pre.ql-syntax').each(function (i, block) {
+            if ($(this).hasClass('prettyprinted')) {
+                return;
+            }
+            hljs.highlightBlock(block);
+        });
+        // hljs.initLineNumbersOnLoad();
+    }catch (e){
+        console.log(e);
+    }
 }
 
 
-var events = $("body");
+
 
 $(function () {
     $(".view-backtop").on("click", function () {
@@ -111,13 +172,7 @@ $(function () {
         }
     }).on('select_node.jstree', function (node, selected, event) {
         $(".m-manual").removeClass('manual-mobile-show-left');
-        var url = selected.node.a_attr.href;
-
-        if (url === window.location.href) {
-            return false;
-        }
-
-        loadDocument(url, selected.node.id);
+        loadDocument(selected.node.a_attr.href, selected.node.id);
     });
 
     $("#slidebar").on("click", function () {
@@ -137,34 +192,6 @@ $(function () {
         } else {
             $(".m-manual").removeClass('manual-fullscreen-active');
         }
-    });
-
-    // 处理打开事件
-    events.on('article.open', function (event, $param) {
-
-        var prevState = window.history.state || {};
-        if ('pushState' in history) {
-            // if ($param.$init === false) {
-            //     window.history.replaceState($param, $param.$id, $param.$url);
-            // } else {
-            //     window.history.pushState($param, $param.$id, $param.$url);
-            // }
-
-            if ($param.$id) {
-                prevState.$id === $param.$id || window.history.pushState($param, $param.$id, $param.$url);
-            } else {
-                window.history.pushState($param, $param.$id, $param.$url);
-                window.history.replaceState($param, $param.$id, $param.$url);
-            }
-        } else {
-            window.location.hash = $param.$url;
-        }
-
-        initHighlighting();
-
-        $(".manual-right").scrollTop(0);
-        //使用layer相册功能查看图片
-        layer.photos({photos: "#page-content"});
     });
 
     $(".navg-item[data-mode]").on("click", function () {

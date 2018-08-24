@@ -7,7 +7,11 @@
 
     <title>编辑文档 </title>
     <script type="text/javascript">
+        window.treeCatalog = null;
         window.baseUrl = "{{.BaseUrl}}";
+        window.saveing = false;
+        window.katex = { js: "{{cdnjs "/static/katex/katex"}}",css: "{{cdncss "/static/katex/katex"}}"};
+        window.editormdLib = "{{cdnjs "/static/editor.md/lib/"}}";
         window.editor = null;
         window.imageUploadURL = "{{urlfor "DocumentController.Upload" "identify" .Model.Identify}}";
         window.fileUploadURL = "{{urlfor "DocumentController.Upload" "identify" .Model.Identify}}";
@@ -20,25 +24,32 @@
         window.sortURL = "{{urlfor "BookController.SaveSort" ":key" .Model.Identify}}";
         window.historyURL = "{{urlfor "DocumentController.History"}}";
         window.removeAttachURL = "{{urlfor "DocumentController.RemoveAttachment"}}";
+        window.highlightStyle = "{{.HighlightStyle}}";
+        window.template = { "getUrl":"{{urlfor "TemplateController.Get"}}", "listUrl" : "{{urlfor "TemplateController.List"}}", "deleteUrl" : "{{urlfor "TemplateController.Delete"}}", "saveUrl" :"{{urlfor "TemplateController.Add"}}"}
     </script>
     <!-- Bootstrap -->
     <link href="{{cdncss "/static/bootstrap/css/bootstrap.min.css"}}" rel="stylesheet">
     <link href="{{cdncss "/static/font-awesome/css/font-awesome.min.css"}}" rel="stylesheet">
     <link href="{{cdncss "/static/jstree/3.3.4/themes/default/style.min.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/editor.md/css/editormd.css"}}" rel="stylesheet">
+    <link href="{{cdncss "/static/editor.md/css/editormd.css" "version"}}" rel="stylesheet">
 
     <link href="{{cdncss "/static/css/jstree.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/highlight/styles/vs.css"}}" rel="stylesheet">
     <link href="{{cdncss "/static/webuploader/webuploader.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/css/markdown.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/prettify/themes/prettify.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/css/markdown.preview.css"}}" rel="stylesheet">
+    <link href="{{cdncss "/static/css/markdown.css" "version"}}" rel="stylesheet">
+    <link href="{{cdncss "/static/css/markdown.preview.css" "version"}}" rel="stylesheet">
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
     <script src="/static/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="/static/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
+    <style type="text/css">
+        .text{
+            font-size: 12px;
+            color: #999999;
+            font-weight: 200;
+        }
+    </style>
 </head>
 <body>
 
@@ -48,7 +59,8 @@
             <a href="{{urlfor "BookController.Index"}}" data-toggle="tooltip" data-title="返回"><i class="fa fa-chevron-left" aria-hidden="true"></i></a>
         </div>
         <div class="editormd-group">
-            <a href="javascript:;" id="markdown-save" data-toggle="tooltip" data-title="保存" class="disabled save"><i class="fa fa-save" aria-hidden="true" name="save"></i></a>
+            <a href="javascript:;" id="markdown-save" data-toggle="tooltip" data-title="保存" class="disabled save"><i class="fa fa-save first" aria-hidden="true" name="save"></i></a>
+            <a href="javascript:;" id="markdown-template" data-toggle="tooltip" data-title="保存为模板" class="template"><i class="fa fa-briefcase last" aria-hidden="true" name="save-template"></i></a>
         </div>
         <div class="editormd-group">
             <a href="javascript:;" data-toggle="tooltip" data-title="撤销 (Ctrl-Z)"><i class="fa fa-undo first" name="undo" unselectable="on"></i></a>
@@ -144,12 +156,26 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-2 control-label">文档标识</label>
+                    <label class="col-sm-2 control-label">文档标识 <span class="error-message">&nbsp;</span></label>
                     <div class="col-sm-10">
                         <input type="text" name="doc_identify" id="documentIdentify" placeholder="文档唯一标识" class="form-control" maxlength="50">
                         <p style="color: #999;font-size: 12px;">文档标识只能包含小写字母、数字，以及“-”和“_”符号,并且只能小写字母开头</p>
                     </div>
 
+                </div>
+                <div class="form-group">
+                        <div class="col-lg-6">
+                            <label>
+                                <input type="radio" name="is_open" value="1"> 展开<span class="text">(在阅读时会自动展开节点)</span>
+                            </label>
+                        </div>
+                        <div class="col-lg-6">
+                            <label>
+                                <input type="radio" name="is_open" value="0" checked> 关闭<span class="text">(在阅读时会关闭节点)</span>
+                            </label>
+                        </div>
+
+                    <div class="clearfix"></div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -161,6 +187,8 @@
         </form>
     </div>
 </div>
+
+<!-- 显示附件 --->
 <div class="modal fade" id="uploadAttachModal" tabindex="-1" role="dialog" aria-labelledby="uploadAttachModalLabel">
     <div class="modal-dialog" role="document">
         <form method="post" id="uploadAttachModalForm" class="form-horizontal">
@@ -211,7 +239,7 @@
         </form>
     </div>
 </div>
-<!-- Modal -->
+<!-- 显示文档历史 -->
 <div class="modal fade" id="documentHistoryModal" tabindex="-1" role="dialog" aria-labelledby="documentHistoryModalModalLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -228,11 +256,12 @@
         </div>
     </div>
 </div>
-
+<!--- 选择模板--->
 <div class="modal fade" id="documentTemplateModal" tabindex="-1" role="dialog" aria-labelledby="请选择模板类型" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog" style="width: 780px;">
         <div class="modal-content">
             <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="modal-title">请选择模板类型</h4>
             </div>
             <div class="modal-body template-list">
@@ -262,6 +291,16 @@
                             <li>表格支持</li>
                         </ul>
                     </div>
+                    <div class="section">
+                        <a data-type="customs" href="javascript:;"><i class="fa fa-briefcase"></i></a>
+
+                        <h3><a data-type="customs" href="javascript:;">自定义模板</a></h3>
+                        <ul>
+                            <li>自定义模板</li>
+                            <li>支持任意类型文档</li>
+                            <li>可以设置为全局模板</li>
+                        </ul>
+                    </div>
                 </div>
 
             </div>
@@ -277,19 +316,19 @@
 <template id="template-code">
 {{template "document/template_code.tpl"}}
 </template>
+<script src="{{cdnjs "/static/js/array.js" "version"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/jquery/1.12.4/jquery.min.js"}}"></script>
 <script src="{{cdnjs "/static/vuejs/vue.min.js"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/bootstrap/js/bootstrap.min.js"}}"></script>
 <script src="{{cdnjs "/static/webuploader/webuploader.min.js"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/jstree/3.3.4/jstree.min.js"}}" type="text/javascript"></script>
-<script src="{{cdnjs "/static/editor.md/editormd.js"}}" type="text/javascript"></script>
+<script src="{{cdnjs "/static/editor.md/editormd.js" "version"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/layer/layer.js"}}" type="text/javascript" ></script>
 <script src="{{cdnjs "/static/js/jquery.form.js"}}" type="text/javascript"></script>
-<script src="{{cdnjs "/static/js/editor.js"}}" type="text/javascript"></script>
-<script src="{{cdnjs "/static/js/markdown.js"}}" type="text/javascript"></script>
+<script src="{{cdnjs "/static/js/editor.js" "version"}}" type="text/javascript"></script>
+<script src="{{cdnjs "/static/js/markdown.js" "version"}}" type="text/javascript"></script>
 <script type="text/javascript">
     $(function () {
-
         $("#attachInfo").on("click",function () {
             $("#uploadAttachModal").modal("show");
         });

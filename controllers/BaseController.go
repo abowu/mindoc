@@ -77,6 +77,7 @@ func (c *BaseController) Prepare() {
 			}
 		}
 	}
+	c.Data["HighlightStyle"] = beego.AppConfig.DefaultString("highlight_style","github")
 }
 
 // SetMember 获取或设置当前登录用户信息,如果 MemberId 小于 0 则标识删除 Session
@@ -154,9 +155,12 @@ func (c *BaseController) ShowErrorPage(errCode int, errMsg string) {
 
 	var buf bytes.Buffer
 
-	if err := beego.ExecuteViewPathTemplate(&buf, "document/export.tpl", beego.BConfig.WebConfig.ViewsPath, map[string]interface{}{"ErrorMessage": errMsg, "errCode": errCode, "BaseUrl": conf.BaseUrl}); err != nil {
+	if err := beego.ExecuteViewPathTemplate(&buf, "errors/error.tpl", beego.BConfig.WebConfig.ViewsPath, map[string]interface{}{"ErrorMessage": errMsg, "ErrorCode": errCode, "BaseUrl": conf.BaseUrl}); err != nil {
 		c.Abort("500")
 	}
-
-	c.CustomAbort(200, buf.String())
+	if errCode >= 200 && errCode <= 510 {
+		c.CustomAbort(errCode, buf.String())
+	}else{
+		c.CustomAbort(500, buf.String())
+	}
 }

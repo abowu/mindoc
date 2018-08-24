@@ -6,6 +6,9 @@ import (
 
 	"github.com/astaxie/beego"
 	"strconv"
+	"path/filepath"
+	"os"
+	"fmt"
 )
 
 // 登录用户的Session名
@@ -65,8 +68,9 @@ var (
 var (
 	ConfigurationFile = "./conf/app.conf"
 	WorkingDirectory  = "./"
-	LogFile           = "./logs"
+	LogFile           = "./runtime/logs"
 	BaseUrl			  = ""
+	AutoLoadDelay	  = 0
 )
 
 // app_key
@@ -90,6 +94,7 @@ func GetTokenSize() int {
 
 //获取默认文档封面.
 func GetDefaultCover() string {
+
 	return URLForWithCdnImage(beego.AppConfig.DefaultString("cover", "/static/images/book.jpg"))
 }
 
@@ -134,6 +139,43 @@ func GetUploadFileSize() int64 {
 		return s * 1024
 	}
 	return 0
+}
+//是否启用导出
+func GetEnableExport() bool {
+	return beego.AppConfig.DefaultBool("enable_export",true)
+}
+//同一项目导出线程的并发数
+func GetExportProcessNum() int {
+	exportProcessNum := beego.AppConfig.DefaultInt("export_process_num",1)
+
+	if exportProcessNum <= 0 || exportProcessNum > 4 {
+		exportProcessNum = 1
+	}
+	return exportProcessNum;
+}
+//导出项目队列的并发数量
+func GetExportLimitNum() int {
+	exportLimitNum := beego.AppConfig.DefaultInt("export_limit_num",1)
+
+	if exportLimitNum < 0 {
+		exportLimitNum = 1
+	}
+	return exportLimitNum;
+}
+//等待导出队列的长度
+func GetExportQueueLimitNum() int {
+	exportQueueLimitNum := beego.AppConfig.DefaultInt("export_queue_limit_num",10)
+
+	if exportQueueLimitNum <= 0 {
+		exportQueueLimitNum = 100
+	}
+	return exportQueueLimitNum
+}
+//默认导出项目的缓存目录
+func GetExportOutputPath() string {
+	exportOutputPath := filepath.Join(beego.AppConfig.DefaultString("export_output_path", filepath.Join(WorkingDirectory,"cache")),"books")
+
+	return exportOutputPath
 }
 
 //判断是否是允许商城的文件类型.
@@ -200,10 +242,15 @@ func URLForWithCdnImage(p string) string  {
 	return cdn + p
 }
 
-func URLForWithCdnCss (p string) string {
+func URLForWithCdnCss (p string,v ...string) string {
 	cdn := beego.AppConfig.DefaultString("cdncss", "")
 	if strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
 		return p
+	}
+	filePath := WorkingDir(p)
+
+	if f,err := os.Stat(filePath); err == nil && !strings.Contains(p, "?") && len(v) > 0 && v[0] == "version" {
+		p = p + fmt.Sprintf("?v=%s" , f.ModTime().Format("20060102150405"))
 	}
 	//如果没有设置cdn，则使用baseURL拼接
 	if cdn == "" {
@@ -228,11 +275,18 @@ func URLForWithCdnCss (p string) string {
 	return cdn + p
 }
 
-func URLForWithCdnJs(p string) string {
+func URLForWithCdnJs(p string,v ...string) string {
 	cdn := beego.AppConfig.DefaultString("cdnjs", "")
 	if strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
 		return p
 	}
+
+	filePath := WorkingDir(p)
+
+	if f,err := os.Stat(filePath); err == nil && !strings.Contains(p, "?") && len(v) > 0 && v[0] == "version" {
+		p = p + fmt.Sprintf("?v=%s" , f.ModTime().Format("20060102150405"))
+	}
+
 	//如果没有设置cdn，则使用baseURL拼接
 	if cdn == "" {
 		baseUrl := beego.AppConfig.DefaultString("baseurl","")
@@ -254,4 +308,11 @@ func URLForWithCdnJs(p string) string {
 		return cdn + "/" + p
 	}
 	return cdn + p
+}
+
+func WorkingDir(elem ...string) string {
+
+	elems := append([]string{ WorkingDirectory },elem...)
+
+	return filepath.Join(elems...)
 }
