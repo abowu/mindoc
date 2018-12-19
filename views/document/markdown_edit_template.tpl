@@ -270,14 +270,6 @@
             <div class="modal-body template-list">
                 <div class="container">
                     <div class="section">
-                        <a data-type="normal" href="javascript:;"><i class="fa fa-file-o"></i></a>
-                        <h3><a data-type="normal" href="javascript:;">普通文档</a></h3>
-                        <ul>
-                            <li>默认类型</li>
-                            <li>简单的文本文档</li>
-                        </ul>
-                    </div>
-                    <div class="section">
                         <a data-type="api" href="javascript:;"><i class="fa fa-file-code-o"></i></a>
                         <h3><a data-type="api" href="javascript:;">API文档</a></h3>
                         <ul>
