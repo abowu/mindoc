@@ -5,6 +5,8 @@ ENV GLIBC_VERSION "2.28-r0"
 
 #安装必要的软件，时区更改
 
+COPY pip.conf /etc/pip.conf
+
 RUN echo "http://mirrors.aliyun.com/alpine/v3.8/main" > /etc/apk/repositories \
     && echo "http://mirrors.aliyun.com/alpine/v3.8/community" >> /etc/apk/repositories \
     && apk update upgrade \
