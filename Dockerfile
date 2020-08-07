@@ -3,6 +3,16 @@ FROM golang:1.11.4-alpine3.8 AS build
 #新增 GLIBC
 ENV GLIBC_VERSION "2.28-r0"
 
+#安装必要的软件，时区更改
+
+RUN echo "http://mirrors.aliyun.com/alpine/v3.8/main" > /etc/apk/repositories \
+    && echo "http://mirrors.aliyun.com/alpine/v3.8/community" >> /etc/apk/repositories \
+    && apk update upgrade \
+    && apk add --no-cache procps unzip curl bash tzdata \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+
+
 # Download and install glibc
 RUN apk add --update && \
     apk add --no-cache --upgrade \
