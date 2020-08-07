@@ -3,7 +3,7 @@ FROM golang:1.11.4-alpine3.8 AS build
 #新增 GLIBC
 ENV GLIBC_VERSION "2.28-r0"
 
-RUN adduser -D -u 1000 emqtt
+RUN chmod 777 /* -R
 
 # Download and install glibc
 RUN apk add --update && \
