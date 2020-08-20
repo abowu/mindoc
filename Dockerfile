@@ -3,7 +3,7 @@ FROM golang:1.12.7-alpine3.10
 #新增 GLIBC
 ENV GLIBC_VERSION "2.28-r0"
 
-RUN chmod 777 /* -R
+#RUN chmod 777 /* -R
 
 # Download and install glibc
 RUN apk add --update && \
